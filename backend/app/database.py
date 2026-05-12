@@ -3,11 +3,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
-# create_engine sets up the connection pool — not a connection itself.
-# pool_pre_ping=True tests connections before use, preventing stale connections.
+
 engine = create_engine(
     settings.database_url,
-    pool_pre_ping=True,
+    connect_args={"check_same_thread": False}
 )
 
 # SessionLocal is a factory — calling SessionLocal() creates a new DB session.
