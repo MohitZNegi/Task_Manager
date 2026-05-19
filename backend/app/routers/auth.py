@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate, UserResponse, Token
+from app.schemas import UserCreate, UserLogin, UserResponse, Token
 from app.auth import get_current_user, hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -34,13 +35,20 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
         password_hash = hash_password(user_in.password),
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email or username already registered",
+        )
     db.refresh(user)
     return user
 
 
 @router.post("/login", response_model=Token)
-def login(user_in: UserCreate, db: Session = Depends(get_db)):
+def login(user_in: UserLogin, db: Session = Depends(get_db)):
     """
     Log in. Returns a JWT access token on success, 401 on failure.
 

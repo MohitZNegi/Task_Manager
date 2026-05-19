@@ -21,6 +21,12 @@ class UserCreate(BaseModel):
         return v.lower()
 
 
+class UserLogin(BaseModel):
+    """What the client sends to log in."""
+    email: EmailStr
+    password: str = Field(..., min_length=8, description="At least 8 characters")
+
+
 class UserResponse(BaseModel):
     """What the API returns — never includes the password hash."""
     id:         int
@@ -28,6 +34,18 @@ class UserResponse(BaseModel):
     username:   str
     is_active:  bool
     created_at: datetime
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def parse_created_at(cls, v):
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace(" ", "T"))
+            except ValueError:
+                return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+        return v
 
     model_config = {"from_attributes": True}
 
@@ -80,7 +98,31 @@ class TaskResponse(TaskBase):
     is_archived: bool
     created_at:  datetime
     updated_at:  Optional[datetime] = None
-    owner_id:    int
+    user_id:     int
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def parse_task_created_at(cls, v):
+        if isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace(" ", "T"))
+            except ValueError:
+                return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+        return v
+
+    @field_validator("updated_at", mode="before")
+    @classmethod
+    def parse_task_updated_at(cls, v):
+        if v is None or isinstance(v, datetime):
+            return v
+        if isinstance(v, str):
+            try:
+                return datetime.fromisoformat(v.replace(" ", "T"))
+            except ValueError:
+                return datetime.strptime(v, "%Y-%m-%d %H:%M:%S")
+        return v
 
     model_config = {"from_attributes": True}
 
