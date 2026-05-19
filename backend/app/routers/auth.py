@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.schemas import UserCreate, UserResponse, Token
-from app.auth import hash_password, verify_password, create_access_token
+from app.auth import get_current_user, hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -60,10 +60,8 @@ def login(user_in: UserCreate, db: Session = Depends(get_db)):
     return Token(access_token=access_token, token_type="bearer")
 
 
+
 @router.get("/me", response_model=UserResponse)
-def get_me(db: Session = Depends(get_db)):
-    """
-    Returns the currently logged-in user's profile.
-    We'll add Depends(get_current_user) here — shown in Step 7.
-    """
-    pass  
+def get_me(current_user: User = Depends(get_current_user)):
+    """Returns the currently authenticated user's profile."""
+    return current_user
